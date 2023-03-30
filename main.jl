@@ -36,4 +36,4 @@ mach = machine(model, coerce(feat, Continuous), coerce(target, Multiclass))
 rng = StableRNG(100)
 train, test = partition(eachindex(target), 0.7, shuffle=true, rng=rng);
 
-MLJ.fit!(mach, rows=train, verbosity=0)
+MLJ.fit_only!(mach, rows=train)
