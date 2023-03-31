@@ -23,17 +23,17 @@ crps = Corpus(df[:, :Tweet2])
 update_lexicon!(crps)
 
 matrix = DocumentTermMatrix(crps)
-tfdi_mat = tf_idf(matrix)
+tfdif_mat = tf_idf(matrix)
 
-feat, target = tfdi_mat, df[:, :Target]
+feat, target = round.(tfdif_mat), df[:, :Target]
 
 MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
 
 model = MultinomialNBClassifier()
 
-mach = machine(model, coerce(feat, Continuous), coerce(target, Multiclass))
+mach = machine(model, coerce(feat, Count), coerce(target, Finite); cache=false)
 
 rng = StableRNG(100)
-train, test = partition(eachindex(target), 0.7, shuffle=true, rng=rng);
+train, test = partition(eachindex(target), 0.001, shuffle=true, rng=rng);
 
-MLJ.fit_only!(mach, rows=train)
+MLJ.fit!(mach, rows=train)
