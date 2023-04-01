@@ -7,6 +7,7 @@ using Chain
 using Pipe
 using StableRNGs
 using StringEncodings
+using MLJBase
 
 df = CSV.File(open("training.1600000.processed.noemoticon.csv", enc"ISO-8859-1");  header=[:Target, :Id, :Date, :Flag, :User, :Tweet]) |> DataFrame
 # df = CSV.read("training.1600000.processed.noemoticon.csv", DataFrames.DataFrame; header=[:Target, :Id, :Date, :Flag, :User, :Tweet])
@@ -37,3 +38,11 @@ rng = StableRNG(100)
 train, test = partition(eachindex(target), 0.001, shuffle=true, rng=rng);
 
 MLJ.fit!(mach, rows=train)
+
+
+partial_test_dataset = test[1:50]
+probability = MLJ.predict(mach, rows=partial_test_dataset)
+
+println("Log loss on the test set of index 1-10: $(log_loss(probability, target[partial_test_dataset]) |> mean)")
+
+println("Accuracy on the test set of index 1-10: $(accuracy(mode.(probability), target[partial_test_dataset]))")
