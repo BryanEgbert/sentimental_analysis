@@ -1,30 +1,39 @@
 using DataFrames
 using CSV
-using Gadfly
 using TextAnalysis
 using MLJ
 using Chain
 using Pipe
 using StableRNGs
 using StringEncodings
+using MLJText
 using MLJBase
+using Plots
 
-df = CSV.File(open("training.1600000.processed.noemoticon.csv", enc"ISO-8859-1");  header=[:Target, :Id, :Date, :Flag, :User, :Tweet]) |> DataFrame
-# df = CSV.read("training.1600000.processed.noemoticon.csv", DataFrames.DataFrame; header=[:Target, :Id, :Date, :Flag, :User, :Tweet])
-# first(df, 10) |> pretty
+df = CSV.File(open("sentiment_tweets3.csv", enc"ISO-8859-1")) |> DataFrame
+rename!(df, [:Id, :Tweet, :Target])
+# df = CSV.read("sentiment_tweets3.csv", DataFrames.DataFrame; header=[:Target, :Id, :Date, :Flag, :User, :Tweet])
 
-transform!(df, :Tweet => ByRow(x -> StringDocument(x)) => :Tweet2, renamecols=false)
+Plots.bar(["0", "1"], )
+tweet_string_docs = TextAnalysis.StringDocument.(df[:, :Tweet])
 
-remove_case!.(df[:, :Tweet2])
-prepare!.(df[:, :Tweet2], strip_punctuation| strip_numbers)
-stem!.(df[:, :Tweet2])
+# remove_case!.(tweet_string_docs)
+prepare!.(tweet_string_docs, strip_case| strip_punctuation| strip_numbers| strip_non_letters| strip_pronouns| strip_stopwords| stem_words)
 
-crps = Corpus(df[:, :Tweet2])
+crps = Corpus(tweet_string_docs)
 
 update_lexicon!(crps)
 
-matrix = DocumentTermMatrix(crps)
-tfdif_mat = tf_idf(matrix)
+tweet_string_docs =  tokenize.(TextAnalysis.text.(tweet_string_docs))
+sizeof(tweet_string_docs)
+
+tf_idf_transformer = TfidfTransformer()
+mach = machine(tf_idf_transformer, tweet_string_docs; cache=false) |> fit!
+
+fitted_params(mach)
+
+tfdif_mat = MLJ.transform(mach, tweet_string_docs)
+
 
 feat, target = round.(tfdif_mat), df[:, :Target]
 
@@ -35,14 +44,16 @@ model = MultinomialNBClassifier()
 mach = machine(model, coerce(feat, Count), coerce(target, Finite); cache=false)
 
 rng = StableRNG(100)
-train, test = partition(eachindex(target), 0.001, shuffle=true, rng=rng);
+train, test = partition(eachindex(target), 0.7, shuffle=true, rng=rng);
 
 MLJ.fit!(mach, rows=train)
 
+probability = MLJ.predict(mach, rows=test)
 
-partial_test_dataset = test[1:50]
-probability = MLJ.predict(mach, rows=partial_test_dataset)
+println("Log loss on the test set of index 1-10: $(log_loss(probability, target[test]) |> mean)")
 
-println("Log loss on the test set of index 1-10: $(log_loss(probability, target[partial_test_dataset]) |> mean)")
+println("Accuracy on the test set of index 1-10: $(accuracy(mode.(probability), target[test]))")
 
-println("Accuracy on the test set of index 1-10: $(accuracy(mode.(probability), target[partial_test_dataset]))")
+confusion_mat = ConfusionMatrix()(mode.(probability), coerce(target[test], OrderedFactor))
+cm_plt = Plots.heatmap(confusion_mat.mat, xlabel="ground truth", ylabel="predicted values", title="Confusion Matrix of\nMNB Classifier using Rounded TF-IDF Vectorizer", size= (800, 800))
+
