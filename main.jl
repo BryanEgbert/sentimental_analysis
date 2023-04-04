@@ -43,7 +43,8 @@ mach = machine(multinomial_nb_classifier_pipe, feat, target)
 MLJ.fit!(mach, rows=train)
 fitted_params(mach)
 
-evaluation = evaluate!(mach, resampling=CV(), measure=[Accuracy(), Precision(), TruePositiveRate(), FScore(), LogLoss()])
+evaluation = evaluate!(mach, resampling=CV(), measure=[Accuracy(), Precision(), TruePositiveRate(), FScore(), LogLoss()], rows=test)
+println(evaluation)
 
 yhat = MLJ.predict(mach, rows=test)
 
