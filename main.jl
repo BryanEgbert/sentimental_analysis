@@ -15,12 +15,10 @@ rename!(df, [:Id, :Tweet, :Target])
 
 schema(df)
 
-# tweet_string_docs = TextAnalysis.StringDocument.(df[:, :Tweet])
 df.Target = coerce(df.Target, OrderedFactor)
 levels(df.Target) 
 
 df.Tweet = TextAnalysis.StringDocument.(df[:, :Tweet])
-
 
 schema(df)
 
@@ -37,15 +35,23 @@ rng = StableRNG(100)
 train, test = partition(eachindex(target), 0.7, shuffle=true, rng=rng);
 
 MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
-pipe = (feat -> tokenize.(TextAnalysis.text.(feat))) |> TfidfTransformer() |> (feat -> round.(feat)) |> MultinomialNBClassifier()
+multinomial_nb_classifier_pipe = (feat -> tokenize.(TextAnalysis.text.(feat))) |> TfidfTransformer() |> (feat -> round.(feat)) |> MultinomialNBClassifier()
 
-mach = machine(pipe, feat, target)
+# random_forest_pipeline = (feat -> tokenize.(TextAnalysis.text.(feat))) |> TfidfTransformer() |>
+
+mach = machine(multinomial_nb_classifier_pipe, feat, target)
 MLJ.fit!(mach, rows=train)
 fitted_params(mach)
 
-evaluate!(mach, resampling=CV(), measure=[Accuracy()])
+evaluation = evaluate!(mach, resampling=CV(), measure=[Accuracy(), Precision(), TruePositiveRate(), FScore(), LogLoss()])
 
-yhat = MLJ.predict(pipe, rows=test)
+yhat = MLJ.predict(mach, rows=test)
+
+println("Accuracy on the test set: $(MLJ.accuracy(mode.(yhat), target[test]))")
+println("fscore on the test set: $(MLJ.f1score(mode.(yhat), target[test]))")
+
+confusion_mat = ConfusionMatrix()(mode.(yhat), coerce(target[test], OrderedFactor))
+cm_plt = Plots.heatmap(confusion_mat.mat, xlabel="ground truth", ylabel="predicted values", title="Confusion Matrix of\nMNB Classifier using Rounded TF-IDF Vectorizer", size= (800, 800))
 
 # tweet_string_docs =  tokenize.(TextAnalysis.text.(tweet_string_docs))
 
@@ -73,10 +79,4 @@ yhat = MLJ.predict(pipe, rows=test)
 # probability = MLJ.predict(mach, rows=test)
 
 # println("Log loss on the test set: $(log_loss(probability, target[test]) |> mean)")
-
-# println("Accuracy on the test set: $(MLJ.accuracy(mode.(probability), target[test]))")
-# println("fscore on the test set: $(MLJ.f1score(mode.(probability), target[test]))")
-
-# confusion_mat = ConfusionMatrix()(mode.(probability), coerce(target[test], OrderedFactor))
-# cm_plt = Plots.heatmap(confusion_mat.mat, xlabel="ground truth", ylabel="predicted values", title="Confusion Matrix of\nMNB Classifier using Rounded TF-IDF Vectorizer", size= (800, 800))
 
