@@ -13,19 +13,22 @@ using Plots
 df = CSV.File(open("sentiment_tweets3.csv", enc"ISO-8859-1")) |> DataFrame
 rename!(df, [:Id, :Tweet, :Target])
 
-schema(df)
+df = select!(df, Not([:Id]))
 
 df.Target = coerce(df.Target, OrderedFactor)
 levels(df.Target) 
 
 df.Tweet = TextAnalysis.StringDocument.(df[:, :Tweet])
 
-schema(df)
+Plots.bar(["0", "1"], [nrow(df[(df.Target .== 0), :]), nrow(df[(df.Target .== 1), :])])
 
 feat, target = MLJ.unpack(df, ==(:Tweet), ==(:Target))
 
-# remove_case!.(tweet_string_docs)
-prepare!.(feat, strip_case| strip_punctuation| strip_numbers| strip_non_letters| strip_pronouns| strip_stopwords| stem_words)
+remove_case!.(feat)
+TextAnalysis.remove_whitespace!.(feat)
+remove_patterns!.(feat, r"(?<=\s|^)#[\p{L}\p{N}_]+")
+remove_patterns!.(feat, r"@\w+")
+prepare!.(feat, strip_indefinite_articles| strip_punctuation| strip_pronouns| strip_numbers| strip_non_letters| strip_stopwords| stem_words)
 
 crps = Corpus(feat)
 
@@ -43,7 +46,7 @@ mach = machine(multinomial_nb_classifier_pipe, feat, target)
 MLJ.fit!(mach, rows=train)
 fitted_params(mach)
 
-evaluation = evaluate!(mach, resampling=CV(), measure=[Accuracy(), Precision(), TruePositiveRate(), FScore(), LogLoss()], rows=test)
+evaluation = evaluate!(mach, resampling=CV(nfolds=3), measure=[Accuracy(), Precision(), TruePositiveRate(), FScore(), LogLoss()], rows=test)
 println(evaluation)
 
 yhat = MLJ.predict(mach, rows=test)
