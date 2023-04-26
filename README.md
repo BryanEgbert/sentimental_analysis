@@ -54,7 +54,7 @@ Both in Julia and Python use the same data cleaning methods
 ### **Random Forest Classifier**
 | Measurements | Julia | Python |
 |--------------|-------|--------|
-| Accuracy | **94.6%** |  |
-| F1 Score | **86.2%** |  |
-| Precision | **100%** |  |
-| Recall | **75.8%** |  |
+| Accuracy | **98%** | 94.9% |
+| F1 Score | **95.3%** | 87.6% |
+| Precision | **100%** | 98.7% |
+| Recall | **91%** | 78.8% |

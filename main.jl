@@ -20,7 +20,7 @@ levels(df.Target)
 
 df.Tweet = TextAnalysis.StringDocument.(df[:, :Tweet])
 
-Plots.bar(["0", "1"], [nrow(df[(df.Target .== 0), :]), nrow(df[(df.Target .== 1), :])])
+data_plot = Plots.bar(["0", "1"], [nrow(df[(df.Target .== 0), :]), nrow(df[(df.Target .== 1), :])])
 
 feat, target = MLJ.unpack(df, ==(:Tweet), ==(:Target))
 
