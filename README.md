@@ -4,7 +4,7 @@ Sentimental analysis for final projects using [Julia](https://julialang.org) and
 ## Setup
 - **Julia:**  
     Go to file `depression_detection_jl.ipynb` and run the code. Make sure to run it from top to bottom.
-- **Python:**
+- **Python:**  
     Before running the Python code in `depression_detection_python.ipynb`, make sure to install the required packages, it is 
     recommended to install them in a python virtual environment assuming that you run this in a code editor other than Google Colab.  
     - Creating python virtual environment 
