@@ -19,10 +19,7 @@ Sentimental analysis for final projects using [Julia](https://julialang.org) and
         ```powershell
         > pip install -r requirements.txt
         ```
-
-If you already installed the julia extension in VSCode, it is similar to jupyter notebook but in VSCode without using the `.ipynb` file extension, `Ctrl + Enter` to execute a line based on your cursor or multiple lines of highlighted code
-
-data used: [Sentimental Analysis for Tweets Uploaded by SHINIGAMI](https://www.kaggle.com/datasets/gargmanas/sentimental-analysis-for-tweets) (currently being used)
+data used: [Sentimental Analysis for Tweets Uploaded by SHINIGAMI](https://www.kaggle.com/datasets/gargmanas/sentimental-analysis-for-tweets)
 
 
 ## Other Datasets Options in Kaggle
