@@ -12,48 +12,75 @@ using Plots
 
 df = CSV.File(open("sentiment_tweets3.csv", enc"ISO-8859-1")) |> DataFrame
 rename!(df, [:Id, :Tweet, :Target])
-# df = CSV.read("sentiment_tweets3.csv", DataFrames.DataFrame; header=[:Target, :Id, :Date, :Flag, :User, :Tweet])
 
-Plots.bar(["0", "1"], )
-tweet_string_docs = TextAnalysis.StringDocument.(df[:, :Tweet])
+df = select!(df, Not([:Id]))
 
-# remove_case!.(tweet_string_docs)
-prepare!.(tweet_string_docs, strip_case| strip_punctuation| strip_numbers| strip_non_letters| strip_pronouns| strip_stopwords| stem_words)
+df.Target = coerce(df.Target, OrderedFactor)
+levels(df.Target) 
 
-crps = Corpus(tweet_string_docs)
+df.Tweet = TextAnalysis.StringDocument.(df[:, :Tweet])
+
+data_plot = Plots.bar(["0", "1"], [nrow(df[(df.Target .== 0), :]), nrow(df[(df.Target .== 1), :])])
+
+feat, target = MLJ.unpack(df, ==(:Tweet), ==(:Target))
+
+remove_case!.(feat)
+TextAnalysis.remove_whitespace!.(feat)
+remove_patterns!.(feat, r"(?<=\s|^)#[\p{L}\p{N}_]+")
+remove_patterns!.(feat, r"@\w+")
+prepare!.(feat, strip_indefinite_articles| strip_punctuation| strip_pronouns| strip_numbers| strip_non_letters| strip_stopwords| stem_words)
+
+crps = Corpus(feat)
 
 update_lexicon!(crps)
-
-tweet_string_docs =  tokenize.(TextAnalysis.text.(tweet_string_docs))
-sizeof(tweet_string_docs)
-
-tf_idf_transformer = TfidfTransformer()
-mach = machine(tf_idf_transformer, tweet_string_docs; cache=false) |> fit!
-
-fitted_params(mach)
-
-tfdif_mat = MLJ.transform(mach, tweet_string_docs)
-
-
-feat, target = round.(tfdif_mat), df[:, :Target]
-
-MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
-
-model = MultinomialNBClassifier()
-
-mach = machine(model, coerce(feat, Count), coerce(target, Finite); cache=false)
 
 rng = StableRNG(100)
 train, test = partition(eachindex(target), 0.7, shuffle=true, rng=rng);
 
+MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
+multinomial_nb_classifier_pipe = (feat -> tokenize.(TextAnalysis.text.(feat))) |> TfidfTransformer() |> (feat -> round.(feat)) |> MultinomialNBClassifier()
+
+# random_forest_pipeline = (feat -> tokenize.(TextAnalysis.text.(feat))) |> TfidfTransformer() |>
+
+mach = machine(multinomial_nb_classifier_pipe, feat, target)
 MLJ.fit!(mach, rows=train)
+fitted_params(mach)
 
-probability = MLJ.predict(mach, rows=test)
+evaluation = evaluate!(mach, resampling=CV(nfolds=3), measure=[Accuracy(), Precision(), TruePositiveRate(), FScore(), LogLoss()], rows=test)
+println(evaluation)
 
-println("Log loss on the test set of index 1-10: $(log_loss(probability, target[test]) |> mean)")
+yhat = MLJ.predict(mach, rows=test)
 
-println("Accuracy on the test set of index 1-10: $(accuracy(mode.(probability), target[test]))")
+println("Accuracy on the test set: $(MLJ.accuracy(mode.(yhat), target[test]))")
+println("fscore on the test set: $(MLJ.f1score(mode.(yhat), target[test]))")
 
-confusion_mat = ConfusionMatrix()(mode.(probability), coerce(target[test], OrderedFactor))
+confusion_mat = ConfusionMatrix()(mode.(yhat), coerce(target[test], OrderedFactor))
 cm_plt = Plots.heatmap(confusion_mat.mat, xlabel="ground truth", ylabel="predicted values", title="Confusion Matrix of\nMNB Classifier using Rounded TF-IDF Vectorizer", size= (800, 800))
+
+# tweet_string_docs =  tokenize.(TextAnalysis.text.(tweet_string_docs))
+
+# tf_idf_transformer = TfidfTransformer()
+# tfidf = machine(tf_idf_transformer, source(tweet_string_docs)) |> MLJ.fit!
+
+# fitted_params(tfidf)
+
+# tfidf_mat = MLJ.transform(tfidf, tweet_string_docs)
+
+# feat, target = round.(tfidf_mat), df[:, :Target]
+
+# rng = StableRNG(100)
+# train, test = partition(eachindex(target), 0.7, shuffle=true, rng=rng);
+
+# MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
+
+# model = MultinomialNBClassifier()
+
+# mach = machine(model, coerce(feat, Count), coerce(target, Finite); cache=false)
+
+# MLJ.fit!(mach, rows=train)
+# fitted_params = fitted_params(mach)
+
+# probability = MLJ.predict(mach, rows=test)
+
+# println("Log loss on the test set: $(log_loss(probability, target[test]) |> mean)")
 
