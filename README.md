@@ -19,7 +19,9 @@ Sentimental analysis for final projects using [Julia](https://julialang.org) and
         ```powershell
         > pip install -r requirements.txt
         ```
-data used: [Sentimental Analysis for Tweets Uploaded by SHINIGAMI](https://www.kaggle.com/datasets/gargmanas/sentimental-analysis-for-tweets)
+dataset used: 
+- [Sentimental Analysis for Tweets Uploaded by SHINIGAMI](https://www.kaggle.com/datasets/gargmanas/sentimental-analysis-for-tweets)
+- [Suicide and Depression Detection](https://www.kaggle.com/datasets/nikhileswarkomati/suicide-watch)
 
 
 ## Other Datasets Options in Kaggle
