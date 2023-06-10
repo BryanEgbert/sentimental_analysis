@@ -1,29 +1,22 @@
-using DataFrames
-using CSV
-using TextAnalysis
-using MLJ
-using Chain
-using Pipe
-using StableRNGs
-using StringEncodings
-using MLJText
-using MLJBase
-using Plots
-using WordTokenizers
-using Tables
-using ComputationalResources
 using Distributed
-using StatsAPI
 
-# df = CSV.File(open("sentiment_tweets3.csv", enc"ISO-8859-1")) |> DataFrame
-# rename!(df, [:Id, :Tweet, :Target])
+process = addprocs(2, exeflags=["-t 2", "--project=$(Base.active_project())"])
 
-# df = select!(df, Not([:Id]))
-
-# df.Target = coerce(df.Target, OrderedFactor)
-# levels(df.Target) 
-
-# df.Tweet = TextAnalysis.StringDocument.(df[:, :Tweet])
+@everywhere using DataFrames
+@everywhere using CSV
+@everywhere using TextAnalysis
+@everywhere using MLJ
+@everywhere using Chain
+@everywhere using Pipe
+@everywhere using StableRNGs
+@everywhere using StringEncodings
+@everywhere using MLJText
+@everywhere using MLJBase
+@everywhere using Plots
+@everywhere using WordTokenizers
+@everywhere using Tables
+@everywhere using ComputationalResources
+@everywhere using StatsAPI
 
 tweet_df = CSV.File(open("sentiment_tweets3.csv", enc"ISO-8859-1")) |> DataFrame
 rename!(tweet_df, [:Id, :Tweet, :Target])
@@ -40,6 +33,10 @@ df = vcat(tweet_df, suicide_df, cols = :union)
 df.Target = coerce(df.Target, OrderedFactor)
 df.Tweet = TextAnalysis.StringDocument.(df[:, :Tweet])
 
+tweet_df = nothing
+suicide_df = nothing
+GC.gc()
+
 feat, target = MLJ.unpack(df, ==(:Tweet), ==(:Target))
 
 crps = Corpus(feat)
@@ -49,7 +46,6 @@ update_lexicon!(crps)
 remove_patterns!(crps, r"http\S+")
 remove_patterns!(crps, r"#\w+")
 remove_patterns!(crps, r"@\w+")
-
 prepare!(crps, strip_case| strip_punctuation| strip_whitespace| strip_numbers| strip_non_letters| strip_stopwords| stem_words)
 
 rng = StableRNG(100)
@@ -58,13 +54,12 @@ train, test = partition(eachindex(target), 0.7, shuffle=true, rng=rng)
 MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
 multinomial_nb_classifier_count_pipe = (feat -> tokenize.(TextAnalysis.text.(feat))) |> CountTransformer() |> MultinomialNBClassifier()
 
-mach = machine(multinomial_nb_classifier_count_pipe, feat, target)
+df = nothing
+GC.gc()
 
-MLJ.fit!(mach; rows=train, verbosity=5)
-# Threads.@spawn begin
-# end
+mach = machine(multinomial_nb_classifier_count_pipe, feat[train], target[train]; cache=false)
 
-evaluation = evaluate!(mach, resampling=CV(), measure=[Accuracy(), Precision(), recall, FScore(), LogLoss()], rows=test, acceleration=CPUThreads())
+evaluation = evaluate!(mach, resampling=CV(), measure=[Accuracy(), Precision(), recall, FScore(), LogLoss()], acceleration=CPUProcesses(), verbosity=10)
 println(evaluation)
 
 # data_plot = Plots.bar(["0", "1"], [nrow(df[(df.Target .== 0), :]), nrow(df[(df.Target .== 1), :])])

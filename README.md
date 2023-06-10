@@ -49,12 +49,12 @@ Both in Julia and Python use the same data cleaning methods
 **Text Extraction Method Used:** Count vectorizer
 
 ### **Multinomial Naive Bayes Classifier**
-| Measurements | Julia | Python |
+| Measurements | Python |
 |--------------|-------|--------|
-| Accuracy | **96.4%** | 94.8% |
-| F1 Score | **92.3%** | 88.5% |
-| Precision | **89.8%** | 89.3% |
-| Recall | **94.9%** | 87.7% |
+| Accuracy | 88.90% |
+| F1 Score | 89.30% |
+| Precision | 84.44% |
+| Recall | 94.76% |
 
 ### **SVC**
 | Measurements | Julia | Python |
@@ -65,9 +65,9 @@ Both in Julia and Python use the same data cleaning methods
 | Recall | **89.9%** | 73.4% |
 
 ### **Random Forest Classifier**
-| Measurements | Julia | Python |
+| Measurements  | Python |
 |--------------|-------|--------|
-| Accuracy | **98%** | 94.9% |
-| F1 Score | **95.3%** | 87.6% |
-| Precision | **100%** | 98.7% |
-| Recall | **91%** | 78.8% |
+| Accuracy | 88.30%% |
+| F1 Score | 88.29%% |
+| Precision  | 86.41% |
+| Recall | 90.25% |
