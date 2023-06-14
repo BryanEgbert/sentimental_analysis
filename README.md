@@ -57,12 +57,12 @@ Both in Julia and Python use the same data cleaning methods
 | Recall | 94.76% |
 
 ### **SVC**
-| Measurements | Julia | Python |
-|--------------|-------|--------|
-| Accuracy | **97.7%** | 93.8% |
-| F1 Score | **94.6%** | 84.4% |
-| Precision | **100%** | 99.4% |
-| Recall | **89.9%** | 73.4% |
+| Measurements | Python |
+|--------------|--------|
+| Accuracy | 89.20% |
+| F1 Score | 88.29% |
+| Precision | 93.81% |
+| Recall | 83.39% |
 
 ### **Random Forest Classifier**
 | Measurements  | Python |
