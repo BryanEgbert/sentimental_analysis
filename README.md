@@ -50,7 +50,7 @@ Both in Julia and Python use the same data cleaning methods
 
 ### **Multinomial Naive Bayes Classifier**
 | Measurements | Python |
-|--------------|-------|--------|
+|--------------|-------|
 | Accuracy | 88.90% |
 | F1 Score | 89.30% |
 | Precision | 84.44% |
@@ -66,8 +66,24 @@ Both in Julia and Python use the same data cleaning methods
 
 ### **Random Forest Classifier**
 | Measurements  | Python |
-|--------------|-------|--------|
+|--------------|-------|
 | Accuracy | 88.30%% |
 | F1 Score | 88.29%% |
 | Precision  | 86.41% |
 | Recall | 90.25% |
+
+### **XGBoost Classifier**
+| Measurements  | Python |
+|--------------|-------|
+| Accuracy | 89.77%% |
+| F1 Score | 89.18%% |
+| Precision  | 92.28% |
+| Recall | 86.27% |
+
+### **CatBoost Classifier**
+| Measurements  | Python |
+|--------------|-------|
+| Accuracy | 90.79%% |
+| F1 Score | 90.28%% |
+| Precision  | 93.14% |
+| Recall | 87.6% |
