@@ -67,10 +67,10 @@ Both in Julia and Python use the same data cleaning methods
 ### **Random Forest Classifier**
 | Measurements  | Python |
 |--------------|-------|
-| Accuracy | 88.30% |
-| F1 Score | 88.29% |
-| Precision  | 86.41% |
-| Recall | 90.25% |
+| Accuracy | 88.31% |
+| F1 Score | 88.36% |
+| Precision  | 86.52% |
+| Recall | 90.29% |
 
 ### **XGBoost Classifier**
 | Measurements  | Python |
