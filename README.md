@@ -1,12 +1,8 @@
 # sentimental_analysis
-Sentimental analysis for final projects using [Julia](https://julialang.org) and Python, it is recommended to use the latest version of python. See [Setup Julia in VSCode](https://code.visualstudio.com/docs/languages/julia)
+Sentimental analysis for final projects using Python
 
 ## Setup
-- **Julia:**  
-    Go to file `depression_detection_jl.ipynb` and run the code. Make sure to run it from top to bottom.
-- **Python:**  
-    Before running the Python code in `depression_detection_python.ipynb`, make sure to install the required packages, it is 
-    recommended to install them in a python virtual environment assuming that you run this in a code editor other than Google Colab.  
+Before running the Python code in `depression_detection_python.ipynb`, make sure to install the required packages, it is recommended to install them in a python virtual environment assuming that you run this in a code editor other than Google Colab.  
     - Creating python virtual environment 
         ```powershell
         > py -m venv env
