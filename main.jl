@@ -1,27 +1,21 @@
-using Distributed
-
-process = addprocs(2, exeflags=["-t 2", "--project=$(Base.active_project())"])
-
-@everywhere using DataFrames
-@everywhere using CSV
-@everywhere using TextAnalysis
-@everywhere using MLJ
-@everywhere using Chain
-@everywhere using Pipe
-@everywhere using StableRNGs
-@everywhere using StringEncodings
-@everywhere using MLJText
-@everywhere using MLJBase
-@everywhere using Plots
-@everywhere using WordTokenizers
-@everywhere using Tables
-@everywhere using ComputationalResources
-@everywhere using StatsAPI
+using DataFrames
+using CSV
+using TextAnalysis
+using Chain
+using Pipe
+using StringEncodings
+using ScikitLearn
+using ScikitLearn.CrossValidation: train_test_split, cross_val_score
+using ScikitLearn.Pipelines: Pipeline, make_pipeline
+using WordTokenizers
+using StatsAPI
+using Statistics
+using BenchmarkTools
 
 tweet_df = CSV.File(open("sentiment_tweets3.csv", enc"ISO-8859-1")) |> DataFrame
 rename!(tweet_df, [:Id, :Tweet, :Target])
 
-suicide_df = CSV.File(open("Suicide_Detection.csv")) |> DataFrame
+suicide_df = CSV.File(open("Suicide_Detection.csv"), ntasks=3) |> DataFrame
 rename!(suicide_df, [:Id, :Tweet, :Target])
 
 tweet_df = select!(tweet_df, Not([:Id]))
@@ -30,14 +24,14 @@ suicide_df.Target = [item == "non-suicide" ? 0 : 1 for item in suicide_df[!, "Ta
 
 df = vcat(tweet_df, suicide_df, cols = :union)
 
-df.Target = coerce(df.Target, OrderedFactor)
 df.Tweet = TextAnalysis.StringDocument.(df[:, :Tweet])
 
 tweet_df = nothing
 suicide_df = nothing
 GC.gc()
 
-feat, target = MLJ.unpack(df, ==(:Tweet), ==(:Target))
+feat = df.Tweet
+target = df.Target
 
 crps = Corpus(feat)
 
@@ -48,19 +42,28 @@ remove_patterns!(crps, r"#\w+")
 remove_patterns!(crps, r"@\w+")
 prepare!(crps, strip_case| strip_punctuation| strip_whitespace| strip_numbers| strip_non_letters| strip_stopwords| stem_words)
 
-rng = StableRNG(100)
-train, test = partition(eachindex(target), 0.7, shuffle=true, rng=rng)
+feat = TextAnalysis.text.(feat)
 
-MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
-multinomial_nb_classifier_count_pipe = (feat -> tokenize.(TextAnalysis.text.(feat))) |> CountTransformer() |> MultinomialNBClassifier()
+using Conda
+Conda.add("scikit-learn")
+
+x_train, x_test, y_train, y_test = train_test_split(feat, target, test_size=0.3, random_state=100, shuffle=true)
+
+@sk_import feature_extraction.text: CountVectorizer
+@sk_import naive_bayes: MultinomialNB
+count_mnb_pipeline = Pipeline([("count_vect", CountVectorizer()), ("clf", MultinomialNB())])
 
 df = nothing
 GC.gc()
 
-mach = machine(multinomial_nb_classifier_count_pipe, feat[train], target[train]; cache=false)
+yhat = ScikitLearn.fit!(count_mnb_pipeline, x_train, y_train)
 
-evaluation = evaluate!(mach, resampling=CV(), measure=[Accuracy(), Precision(), recall, FScore(), LogLoss()], acceleration=CPUProcesses(), verbosity=10)
-println(evaluation)
+@benchmark cross_val_score($count_mnb_pipeline, $x_train, $y_train; cv=6)
+
+evaluation = cross_val_score(count_mnb_pipeline, x_train, y_train; cv=6)
+println(mean(evaluation))
+
+ScikitLearn.predict(yhat, x_test)
 
 # data_plot = Plots.bar(["0", "1"], [nrow(df[(df.Target .== 0), :]), nrow(df[(df.Target .== 1), :])])
 
